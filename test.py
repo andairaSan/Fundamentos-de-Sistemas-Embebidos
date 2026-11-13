@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 # Práctica 8 - Experimentos 2 y 4
-# Línea 1: apellidos en marquesina (corrimiento infinito a la izquierda)
+# Línea 1: apellidos en marquesina con corrimiento infinito a la izquierda
 # Línea 2: temperatura del DS18B20 en grados centígrados
 import glob
 import threading
 import time
 import smbus2
 
-ADDR = 0x27 # dirección que mostró i2cdetect
-BL, EN, RW, RS = 0x08, 0x04, 0x02, 0x01 # Mapa A del PCF8574
+ADDR = 0x27 #dirección que mostró i2cdetect
+BL, EN, RW, RS = 0x08, 0x04, 0x02, 0x01 #Mapa A del PCF8574
 
 # Apellidos paternos del equipo
 APELLIDOS = ["Garcia", "Sanchez", "Zuniga"]
-VELOCIDAD = 0.3 # segundos entre cada desplazamiento
-MOSTRAR_TEMP = True # False = solo marquesina (experimento 2)
+VELOCIDAD = 0.3 #segundos entre cada desplazamiento
+MOSTRAR_TEMP = True #False = solo marquesina, exp 2
 
 bus = smbus2.SMBus(1)
-temperatura = None # la actualiza el hilo de lectura del sensor
+temperatura = None #la actualiza el hilo de lectura del sensor
 
 
 def pcf_write(val):
@@ -27,7 +27,7 @@ def pulse_en(val):
     pcf_write(val & ~EN); time.sleep(0.0001)
 
 def send_byte(byte, rs):
-    for nibble in (byte & 0xF0, (byte << 4) & 0xF0):# nibble alto y bajo
+    for nibble in (byte & 0xF0, (byte << 4) & 0xF0):#nibble alto y bajo
         pcf_write(BL | nibble | rs)
         pulse_en(BL | nibble | rs)
 
@@ -36,12 +36,12 @@ def lcd_dat(ch):  send_byte(ch, RS)
 
 def init_lcd():
     time.sleep(0.05)
-    for seq in (0x30, 0x30, 0x30, 0x20):# pasa a modo de 4 bits
+    for seq in (0x30, 0x30, 0x30, 0x20):#pasa a modo de 4 bits
         val = (seq & 0xF0) | BL
         pcf_write(val); pulse_en(val)
         time.sleep(0.005 if seq == 0x30 else 0.001)
-    lcd_cmd(0x28) # 2 líneas 5x8
-    lcd_cmd(0x0C) # display ON sin cursor
+    lcd_cmd(0x28) #2 líneas 5x8
+    lcd_cmd(0x0C) #display ON sin cursor
     lcd_cmd(0x01); time.sleep(0.002) # borra
     lcd_cmd(0x06) # cursor incrementa
 
@@ -77,13 +77,13 @@ def hilo_temperatura():
 def texto_temp():
     if temperatura is None:
         return "Temp: sin sensor"
-    return "Temp: %.1f %sC" % (temperatura, chr(0xDF)) # 0xDF = símbolo de grados
+    return "Temp: %.1f %sC" % (temperatura, chr(0xDF)) #0xDF = símbolo de grados
 
 
 def main():
     init_lcd()
     texto = limpiar(" ".join(APELLIDOS)) + " "
-    cinta = texto * (16 // len(texto) + 2)# cinta más larga que la ventana
+    cinta = texto * (16 // len(texto) + 2)#cinta más larga que la ventana
     if MOSTRAR_TEMP:
         threading.Thread(target=hilo_temperatura, daemon=True).start()
     i = 0
@@ -94,7 +94,7 @@ def main():
             if MOSTRAR_TEMP:
                 set_cursor(1, 0)
                 write_string(texto_temp())
-        except OSError: # falla momentánea del bus I2C
+        except OSError: #falla momentánea del bus I2C
             time.sleep(1)
             init_lcd()
             continue
